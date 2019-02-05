@@ -605,6 +605,9 @@ struct task_struct {
 	randomized_struct_fields_start
 
 	void				*stack;
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	unsigned long		stack_start;
+#endif
 	atomic_t			usage;
 	/* Per task flags (PF_*), defined further below: */
 	unsigned int			flags;

@@ -268,6 +268,8 @@ syscall_return_via_sysret:
 	 */
 	STACKLEAK_ERASE_NOCLOBBER
 
+	RANDOMIZE_KSTACK_NOCLOBBER
+
 	SWITCH_TO_USER_CR3_STACK scratch_reg=%rdi
 
 	popq	%rdi
@@ -629,6 +631,8 @@ GLOBAL(swapgs_restore_regs_and_return_to_usermode)
 	 * We can do future final exit work right here.
 	 */
 	STACKLEAK_ERASE_NOCLOBBER
+
+	RANDOMIZE_KSTACK_NOCLOBBER
 
 	SWITCH_TO_USER_CR3_STACK scratch_reg=%rdi
 

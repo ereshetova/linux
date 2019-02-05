@@ -569,9 +569,14 @@ static inline unsigned long current_top_of_stack(void)
 
 static inline bool on_thread_stack(void)
 {
+	/* this might need adjustment to a more fine-grained comparison
+	 * we want a condition like
+	 * "< current_top_of_stack() - task_stack_page(current)"
+	 */
 	return (unsigned long)(current_top_of_stack() -
 			       current_stack_pointer) < THREAD_SIZE;
 }
+
 
 #ifdef CONFIG_PARAVIRT_XXL
 #include <asm/paravirt.h>
@@ -829,12 +834,16 @@ static inline void spin_lock_prefetch(const void *x)
 
 #define task_top_of_stack(task) ((unsigned long)(task_pt_regs(task) + 1))
 
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+#define task_pt_regs(task) ((struct pt_regs *)(task_ptregs(task)))
+#else
 #define task_pt_regs(task) \
-({									\
+({                                 \
 	unsigned long __ptr = (unsigned long)task_stack_page(task);	\
-	__ptr += THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;		\
-	((struct pt_regs *)__ptr) - 1;					\
+	__ptr += THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;         \
+	((struct pt_regs *)__ptr) - 1;                              \
 })
+#endif
 
 #ifdef CONFIG_X86_32
 /*

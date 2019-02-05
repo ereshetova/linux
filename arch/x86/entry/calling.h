@@ -337,6 +337,14 @@ For 32-bit we have the following conventions - kernel is built with
 #endif
 .endm
 
+.macro RANDOMIZE_KSTACK_NOCLOBBER
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	PUSH_AND_CLEAR_REGS
+	call randomize_kstack
+	POP_REGS
+#endif
+.endm
+
 #endif /* CONFIG_X86_64 */
 
 .macro STACKLEAK_ERASE

@@ -422,6 +422,9 @@ static void release_task_stack(struct task_struct *tsk)
 	tsk->stack = NULL;
 #ifdef CONFIG_VMAP_STACK
 	tsk->stack_vm_area = NULL;
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	tsk->stack_start = 0;
+#endif
 #endif
 }
 
@@ -863,6 +866,10 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 	tsk->stack = stack;
 #ifdef CONFIG_VMAP_STACK
 	tsk->stack_vm_area = stack_vm_area;
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	tsk->stack_start = 0;
+	tsk->stack_start = (unsigned long)task_top_of_stack(tsk);
+#endif
 #endif
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 	atomic_set(&tsk->stack_refcount, 1);
@@ -922,6 +929,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 
 free_stack:
 	free_thread_stack(tsk);
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	tsk->stack_start = 0;
+#endif
 free_tsk:
 	free_task_struct(tsk);
 	return NULL;

@@ -33,7 +33,7 @@ bool in_task_stack(unsigned long *stack, struct task_struct *task,
 		   struct stack_info *info)
 {
 	unsigned long *begin = task_stack_page(task);
-	unsigned long *end   = task_stack_page(task) + THREAD_SIZE;
+	unsigned long *end   = (unsigned long *)task_top_of_stack(task);
 
 	if (stack < begin || stack >= end)
 		return false;

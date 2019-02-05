@@ -43,7 +43,7 @@ static inline void stack_overflow_check(struct pt_regs *regs)
 		return;
 
 	if (regs->sp >= curbase + sizeof(struct pt_regs) + STACK_TOP_MARGIN &&
-	    regs->sp <= curbase + THREAD_SIZE)
+	    regs->sp <= task_top_of_stack(current))
 		return;
 
 	irq_stack_top = (u64)this_cpu_ptr(irq_stack_union.irq_stack) +

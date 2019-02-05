@@ -21,6 +21,22 @@ static inline void *task_stack_page(const struct task_struct *task)
 	return task->stack;
 }
 
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+static inline void *task_ptregs(const struct task_struct *task)
+{
+	unsigned long __ptr;
+
+	if (task->stack_start == 0) {
+		__ptr = (unsigned long)task_stack_page(task);
+		__ptr += THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
+		return ((struct pt_regs *)__ptr) - 1;
+	}
+
+	__ptr = task->stack_start;
+	return ((struct pt_regs *)__ptr) - 1;
+}
+#endif
+
 #define setup_thread_stack(new,old)	do { } while(0)
 
 static inline unsigned long *end_of_stack(const struct task_struct *task)
@@ -82,7 +98,7 @@ static inline int object_is_on_stack(const void *obj)
 {
 	void *stack = task_stack_page(current);
 
-	return (obj >= stack) && (obj < (stack + THREAD_SIZE));
+	return (obj >= stack) && (obj < ((void *)task_top_of_stack(current)));
 }
 
 extern void thread_stack_cache_init(void);

@@ -819,7 +819,7 @@ unsigned long get_wchan(struct task_struct *p)
 	 * We need to read FP and IP, so we need to adjust the upper
 	 * bound by another unsigned long.
 	 */
-	top = start + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
+	top = task_top_of_stack(p);
 	top -= 2 * sizeof(unsigned long);
 	bottom = start;
 

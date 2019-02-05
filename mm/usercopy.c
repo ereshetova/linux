@@ -37,7 +37,7 @@
 static noinline int check_stack_object(const void *obj, unsigned long len)
 {
 	const void * const stack = task_stack_page(current);
-	const void * const stackend = stack + THREAD_SIZE;
+	const void * const stackend = (void *)task_top_of_stack(current);
 	int ret;
 
 	/* Object is not on the stack at all. */

@@ -23,6 +23,7 @@
 #include <linux/user-return-notifier.h>
 #include <linux/nospec.h>
 #include <linux/uprobes.h>
+#include <linux/random.h>
 #include <linux/livepatch.h>
 #include <linux/syscalls.h>
 
@@ -291,6 +292,26 @@ __visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
 	}
 
 	syscall_return_slowpath(regs);
+}
+#endif
+
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+__visible void randomize_kstack(void)
+{
+	unsigned long r_offset, new_top, stack_bottom;
+
+	if (current->stack_start != 0) {
+
+		r_offset = get_random_long();
+		r_offset &= 0xFFUL;
+		r_offset <<= 4;
+		stack_bottom = (unsigned long)task_stack_page(current);
+
+		new_top = stack_bottom + THREAD_SIZE - 0xFF0UL;
+		new_top += r_offset;
+		this_cpu_write(cpu_current_top_of_stack, new_top);
+		current->stack_start = new_top;
+	}
 }
 #endif
 
