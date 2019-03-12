@@ -35,6 +35,12 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/syscalls.h>
 
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+#include <linux/random.h>
+
+void *alloca(size_t size);
+#endif
+
 #ifdef CONFIG_CONTEXT_TRACKING
 /* Called on entry from user mode with IRQs off. */
 __visible inline void enter_from_user_mode(void)
@@ -272,6 +278,13 @@ __visible inline void syscall_return_slowpath(struct pt_regs *regs)
 __visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
 {
 	struct thread_info *ti;
+
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	size_t offset = ((size_t)prandom_u32()) % 256;
+	char *ptr = alloca(offset);
+
+	asm volatile("":"=m"(*ptr));
+#endif
 
 	enter_from_user_mode();
 	local_irq_enable();
