@@ -167,12 +167,18 @@ GLOBAL(entry_SYSCALL_64_after_hwframe)
 
 	PUSH_AND_CLEAR_REGS rax=$-ENOSYS
 
+	RANDOMIZE_KSTACK		/* stores randomized offset in r15 */
+
 	TRACE_IRQS_OFF
 
 	/* IRQs are off. */
 	movq	%rax, %rdi
 	movq	%rsp, %rsi
+	sub 	%r15, %rsp          /* substitute random offset from rsp */
 	call	do_syscall_64		/* returns with IRQs disabled */
+
+	/* need to restore the gap */
+	add 	%r15, %rsp       /* add random offset back to rsp */
 
 	TRACE_IRQS_IRETQ		/* we're about to change IF */
 

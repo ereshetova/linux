@@ -192,7 +192,6 @@ void show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
 	 */
 	for ( ; stack; stack = PTR_ALIGN(stack_info.next_sp, sizeof(long))) {
 		const char *stack_name;
-
 		if (get_stack_info(stack, task, &stack_info, &visit_mask)) {
 			/*
 			 * We weren't on a valid stack.  It's possible that
@@ -224,6 +223,9 @@ void show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
 		 */
 		for (; stack < stack_info.end; stack++) {
 			unsigned long real_addr;
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+			unsigned long left_gap;
+#endif
 			int reliable = 0;
 			unsigned long addr = READ_ONCE_NOCHECK(*stack);
 			unsigned long *ret_addr_p =
@@ -272,6 +274,12 @@ next:
 			regs = unwind_get_entry_regs(&state, &partial);
 			if (regs)
 				show_regs_if_on_stack(&stack_info, regs, partial);
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+			left_gap = (unsigned long)regs - (unsigned long)stack;
+			/* if we reached last frame, jump over the random gap*/
+			if (left_gap < __MAX_STACK_RANDOM_OFFSET)
+				stack = (unsigned long *)regs--;
+#endif
 		}
 
 		if (stack_name)

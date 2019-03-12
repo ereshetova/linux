@@ -98,7 +98,14 @@ static inline unsigned long *last_frame(struct unwind_state *state)
 
 static bool is_last_frame(struct unwind_state *state)
 {
-	return state->bp == last_frame(state);
+	if (state->bp == last_frame(state))
+		return true;
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	if ((last_frame(state) - state->bp) < __MAX_STACK_RANDOM_OFFSET)
+		return true;
+#endif
+	return false;
+
 }
 
 #ifdef CONFIG_X86_32

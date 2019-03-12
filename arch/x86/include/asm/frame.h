@@ -4,6 +4,9 @@
 
 #include <asm/asm.h>
 
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+#define __MAX_STACK_RANDOM_OFFSET 0xFF0
+#endif
 /*
  * These are stack frame creation macros.  They should be used by every
  * callable non-leaf asm function to make kernel stack traces more reliable.

@@ -345,6 +345,20 @@ For 32-bit we have the following conventions - kernel is built with
 #endif
 .endm
 
+.macro RANDOMIZE_KSTACK
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	/* prepare a random offset in rax */
+	pushq %rax
+	xorq  %rax, %rax
+	ALTERNATIVE "rdtsc", "rdrand %rax", X86_FEATURE_RDRAND
+	andq  $__MAX_STACK_RANDOM_OFFSET, %rax
+
+	/* store offset in r15 */
+	movq  %rax, %r15
+	popq  %rax
+#endif
+.endm
+
 /*
  * This does 'call enter_from_user_mode' unless we can avoid it based on
  * kernel config or using the static jump infrastructure.
