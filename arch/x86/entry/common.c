@@ -38,7 +38,8 @@
 #ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
 #include <linux/random.h>
 
-void *alloca(size_t size);
+//void *alloca(size_t size);
+void *__builtin_alloca(size_t size);
 #endif
 
 #ifdef CONFIG_CONTEXT_TRACKING
@@ -357,6 +358,14 @@ static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
 /* Handles int $0x80 */
 __visible void do_int80_syscall_32(struct pt_regs *regs)
 {
+
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	size_t offset = ((size_t)prandom_u32()) % 256;
+	char *ptr = __builtin_alloca(offset);
+
+	asm volatile("":"=m"(*ptr));
+#endif
+
 	enter_from_user_mode();
 	local_irq_enable();
 	do_syscall_32_irqs_on(regs);
@@ -372,6 +381,20 @@ __visible long do_fast_syscall_32(struct pt_regs *regs)
 
 	unsigned long landing_pad = (unsigned long)current->mm->context.vdso +
 		vdso_image_32.sym_int80_landing_pad;
+
+#ifdef CONFIG_RANDOMIZE_KSTACK_OFFSET
+	unsigned int diff = 0, esp1, esp2;
+    asm volatile("movl %%esp,%0" : "=r"(esp1));
+    //printk("do_syscall_64: esp1:%u\n", esp1);
+	size_t offset = ((size_t)prandom_u32()) % 256;
+	char *ptr = __builtin_alloca(offset);
+
+	asm volatile("":"=m"(*ptr));
+	asm volatile("movl %%esp,%0" : "=r"(esp2));
+	//printk("do_syscall_64: esp2:%u\n", esp2);
+	diff = esp1 - esp2;
+	printk("do_syscall_64: diff:%u\n", diff);
+#endif
 
 	/*
 	 * SYSENTER loses EIP, and even SYSCALL32 needs us to skip forward
