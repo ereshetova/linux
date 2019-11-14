@@ -103,6 +103,25 @@ hex_only:
 #endif
 }
 
+
+void dump_vma(const struct vm_area_struct *vma)
+{
+	pr_emerg("vma %px start %px end %px\n"
+		"next %px prev %px mm %px\n"
+		"prot %lx flags-prot: %lx\n"
+		"anon_vma %px vm_ops %px\n"
+		"pgoff %lx file %px private_data %px\n"
+		"flags: %#lx(%pGv)\n",
+		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
+		vma->vm_prev, vma->vm_mm,
+		(unsigned long)pgprot_val(vma->vm_page_prot),
+		(unsigned long)pgprot_val(vm_get_page_prot(vma->vm_flags)),
+		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
+		vma->vm_file, vma->vm_private_data,
+		vma->vm_flags, &vma->vm_flags);
+}
+EXPORT_SYMBOL(dump_vma);
+
 void dump_page(struct page *page, const char *reason)
 {
 	__dump_page(page, reason);
@@ -112,21 +131,7 @@ EXPORT_SYMBOL(dump_page);
 
 #ifdef CONFIG_DEBUG_VM
 
-void dump_vma(const struct vm_area_struct *vma)
-{
-	pr_emerg("vma %px start %px end %px\n"
-		"next %px prev %px mm %px\n"
-		"prot %lx anon_vma %px vm_ops %px\n"
-		"pgoff %lx file %px private_data %px\n"
-		"flags: %#lx(%pGv)\n",
-		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
-		vma->vm_prev, vma->vm_mm,
-		(unsigned long)pgprot_val(vma->vm_page_prot),
-		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
-		vma->vm_file, vma->vm_private_data,
-		vma->vm_flags, &vma->vm_flags);
-}
-EXPORT_SYMBOL(dump_vma);
+
 
 void dump_mm(const struct mm_struct *mm)
 {
@@ -238,3 +243,4 @@ void page_init_poison(struct page *page, size_t size)
 }
 EXPORT_SYMBOL_GPL(page_init_poison);
 #endif		/* CONFIG_DEBUG_VM */
+

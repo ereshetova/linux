@@ -1142,6 +1142,7 @@ static void clear_pages(struct page *page, int n)
 
 	for (i = 0; i < n; i++) {
 		void *addr = kmap_atomic(page + i);
+		printk("%s():: clear a secret page:%s\n", __func__, (unsigned char*)addr);
 		kasan_disable_current();
 		memset(addr, 0x41, PAGE_SIZE);
 		kasan_enable_current();
@@ -1149,6 +1150,11 @@ static void clear_pages(struct page *page, int n)
 	}
 
 	ClearPageSecret(page);
+
+	if (PageSecret(page))
+		printk("%s()::flag not cleared:%lu\n", __func__, page->flags);
+	else
+		printk("%s()::flag cleared:%lu\n", __func__, page->flags);
 
 }
 

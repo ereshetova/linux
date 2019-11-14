@@ -70,7 +70,18 @@ static int madvise_mark_secret(pte_t *pte, unsigned long addr,
 	page = vm_normal_page(vma, addr, *pte);
 	if (!page)
 		return -EINVAL;
+
+	if (PageSecret(page))
+		printk("%s()::flag set before::%lu\n", __func__, page->flags);
+	else
+		printk("%s()::flag not set before::%lu\n", __func__, page->flags);
+
 	SetPageSecret(page);
+	
+	if (PageSecret(page))
+		printk("%s()::flag set::%lu\n", __func__, page->flags);
+	else
+		printk("%s()::flag nt set::%lu\n", __func__, page->flags);
 
 	return 0;
 }
@@ -84,7 +95,18 @@ static int madvise_unmark_secret(pte_t *pte, unsigned long addr,
 	page = vm_normal_page(vma, addr, *pte);
 	if (!page)
 		return -EINVAL;
+
+	if (PageSecret(page))
+		printk("%s()::flag set before::%lu\n", __func__, page->flags);
+	else
+		printk("%s()::flag not set before::%lu\n", __func__, page->flags);
+
 	ClearPageSecret(page);
+	
+	if (PageSecret(page))
+		printk("%s()::flag set::%lu\n", __func__, page->flags);
+	else
+		printk("%s()::flag nt set::%lu\n", __func__, page->flags);
 
 	return 0;
 }
@@ -102,6 +124,10 @@ int secret_madvise(struct vm_area_struct *vma, unsigned long start_address,
 {
 	struct mmu_notifier_range range;
 	struct mmu_gather tlb;
+
+	printk("%s():: advice: %d, vm_flags:%lu\n", __func__, advice, *vm_flags);
+	printk("vma:");
+	dump_vma(vma);
 
 	range.start = max(vma->vm_start, start_address);
 	if (range.start >= vma->vm_end)
@@ -122,6 +148,8 @@ int secret_madvise(struct vm_area_struct *vma, unsigned long start_address,
 				&madvise_nosecret_walk_ops, &tlb);
 		*vm_flags |= ~VM_UNCACHED;
 	}
+
+	printk("%s():: advice: %d, vm_flags after:%lu\n", __func__, advice, *vm_flags);
 
 	return 0;
 }
