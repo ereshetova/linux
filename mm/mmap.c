@@ -171,12 +171,52 @@ void unlink_file_vma(struct vm_area_struct *vma)
 	}
 }
 
+static inline bool vma_page_prot_matches_flags(struct vm_area_struct *vma)
+{
+	unsigned long flags_val = pgprot_val(vm_get_page_prot(vma->vm_flags));
+	unsigned long prot_val  = pgprot_val(vma->vm_page_prot);
+
+	return flags_val == prot_val;
+}
+
+/*
+ * ->vm_page_prot is essentially a value that gets OR'd into each
+ *  of the VMA's PTEs.  It is normally generated when the VMA is
+ *  created from ->vm_flags.  However, some drivers modify it
+ *  directly.  This is OK for VM_SPECIAL VMAs which are excluded
+ *  from things like mlock(), but it is not OK for normal VMAs.
+ *
+ *  If this triggers, it is likely due to direct manipulation of
+ *  ->vm_page_prot on a VMA which is not VM_SPECIAL.
+ */
+static inline void check_vma_prot(struct vm_area_struct *vma)
+{
+	static bool __section(.data.once) __warned;
+	bool same =  vma_page_prot_matches_flags(vma);
+	bool special = vma->vm_flags & VM_SPECIAL;
+
+	if (!IS_ENABLED(CONFIG_DEBUG_VM))
+		return;
+
+	if (same || special)
+		return;
+
+	if (__warned)
+		return;
+	__warned = 1;
+
+	WARN(1, "VMA prot not consistent with flags-prot");
+	dump_vma(vma);
+}
+
 /*
  * Close a vm structure and free it, returning the next.
  */
 static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
 {
 	struct vm_area_struct *next = vma->vm_next;
+
+	check_vma_prot(vma);
 
 	might_sleep();
 	if (vma->vm_ops && vma->vm_ops->close)

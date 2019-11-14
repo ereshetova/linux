@@ -13,11 +13,23 @@
  * Only override these if Protection Keys are available
  * (which is only on 64-bit).
  */
-#define arch_vm_get_page_prot(vm_flags)	__pgprot(	\
+#define arch_pkey_pgprot_val(vm_flags)	(	\
 		((vm_flags) & VM_PKEY_BIT0 ? _PAGE_PKEY_BIT0 : 0) |	\
 		((vm_flags) & VM_PKEY_BIT1 ? _PAGE_PKEY_BIT1 : 0) |	\
 		((vm_flags) & VM_PKEY_BIT2 ? _PAGE_PKEY_BIT2 : 0) |	\
 		((vm_flags) & VM_PKEY_BIT3 ? _PAGE_PKEY_BIT3 : 0))
+
+/*
+ * Put the "noncached" bits in if VM_UNCACHED is set.
+ * Note that pgprot_noncached() does some checking for
+ * processors that support doing this.
+ */
+#define arch_secret_pgprot_val(vm_flags)  (	\
+		((vm_flags) & VM_UNCACHED ? cachemode2protval(_PAGE_CACHE_MODE_UC) : 0))
+
+#define arch_vm_get_page_prot(vm_flags)	__pgprot(	\
+		arch_pkey_pgprot_val(vm_flags) | 	\
+		arch_secret_pgprot_val(vm_flags))
 
 #define arch_calc_vm_prot_bits(prot, key) (		\
 		((key) & 0x1 ? VM_PKEY_BIT0 : 0) |      \

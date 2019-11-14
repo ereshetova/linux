@@ -43,6 +43,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
 	spinlock_t *ptl;
 	unsigned long pages = 0;
 	int target_node = NUMA_NO_NODE;
+	int p = !!(vma->vm_flags & VM_UNCACHED);
 
 	/*
 	 * Can be called with only the mmap_sem for reading by
@@ -120,6 +121,10 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
 					 !(vma->vm_flags & VM_SOFTDIRTY))) {
 				ptent = pte_mkwrite(ptent);
 			}
+			if (p) printk("opte: %016lx npte: %016lx newprot: %016lx\n",
+					*(unsigned long *)pte,
+					*(unsigned long *)&ptent,
+					newprot.pgprot);
 			ptep_modify_prot_commit(vma, addr, pte, oldpte, ptent);
 			pages++;
 		} else if (IS_ENABLED(CONFIG_MIGRATION)) {
