@@ -70,6 +70,9 @@
 #define MADV_COLD	20		/* deactivate these pages */
 #define MADV_PAGEOUT	21		/* reclaim these pages */
 
+#define MADV_SECRET    22	/* mark these pages to have secrets */
+#define MADV_NONSECRET 23	/* mark these pages to have secrets */
+
 /* compatibility flags */
 #define MAP_FILE	0
 

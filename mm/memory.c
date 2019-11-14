@@ -2333,6 +2333,20 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
 	if (mem_cgroup_try_charge_delay(new_page, mm, GFP_KERNEL, &memcg, false))
 		goto oom_free_new;
 
+	if (vma->vm_flags & VM_UNCACHED){
+		if (PageSecret(new_page))
+			printk("%s()::flag set before:%lu\n", __func__, new_page->flags);
+		else
+			printk("%s()::flag not set before:%lu\n", __func__, new_page->flags);
+
+		SetPageSecret(new_page);
+	
+		if (PageSecret(new_page))
+			printk("%s()::flag set:%lu\n", __func__, new_page->flags);
+		else
+			printk("%s()::flag not set:%lu\n", __func__, new_page->flags);
+	}
+
 	__SetPageUptodate(new_page);
 
 	mmu_notifier_range_init(&range, MMU_NOTIFY_CLEAR, 0, vma, mm,

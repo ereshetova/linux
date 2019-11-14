@@ -51,11 +51,79 @@ static int madvise_need_mmap_write(int behavior)
 	case MADV_COLD:
 	case MADV_PAGEOUT:
 	case MADV_FREE:
+	case MADV_SECRET:
+	case MADV_NONSECRET:
 		return 0;
 	default:
 		/* be safe, default to 1. list exceptions explicitly */
 		return 1;
 	}
+}
+
+
+static int madvise_mark_secret(pte_t *pte, unsigned long addr,
+		 unsigned long next, struct mm_walk *walk)
+{
+	struct vm_area_struct *vma = walk->vma;
+	struct page *page;
+
+	page = vm_normal_page(vma, addr, *pte);
+	if (!page)
+		return -EINVAL;
+	SetPageSecret(page);
+
+	return 0;
+}
+
+static int madvise_unmark_secret(pte_t *pte, unsigned long addr,
+		 unsigned long next, struct mm_walk *walk)
+{
+	struct vm_area_struct *vma = walk->vma;
+	struct page *page;
+
+	page = vm_normal_page(vma, addr, *pte);
+	if (!page)
+		return -EINVAL;
+	ClearPageSecret(page);
+
+	return 0;
+}
+
+static const struct mm_walk_ops madvise_secret_walk_ops = {
+	.pte_entry = madvise_mark_secret,
+};
+
+static const struct mm_walk_ops madvise_nosecret_walk_ops = {
+	.pte_entry = madvise_unmark_secret,
+};
+
+int secret_madvise(struct vm_area_struct *vma, unsigned long start_address,
+		unsigned long end_address, int advice, unsigned long *vm_flags)
+{
+	struct mmu_notifier_range range;
+	struct mmu_gather tlb;
+
+	range.start = max(vma->vm_start, start_address);
+	if (range.start >= vma->vm_end)
+		return -EINVAL;
+	range.end = min(vma->vm_end, end_address);
+	if (range.end <= vma->vm_start)
+		return -EINVAL;
+
+	/* walk the page tables to setup or unset the PG_secret page flag
+	 * to indicate that the content of this page must (not) be cleared
+	 * upon release */
+	if (advice == MADV_SECRET){
+		walk_page_range(vma->vm_mm, range.start, range.end,
+				&madvise_secret_walk_ops, &tlb);
+		*vm_flags |= VM_UNCACHED;
+	} else {
+		walk_page_range(vma->vm_mm, range.start, range.end,
+				&madvise_nosecret_walk_ops, &tlb);
+		*vm_flags |= ~VM_UNCACHED;
+	}
+
+	return 0;
 }
 
 /*
@@ -121,6 +189,12 @@ static long madvise_behavior(struct vm_area_struct *vma,
 	case MADV_HUGEPAGE:
 	case MADV_NOHUGEPAGE:
 		error = hugepage_madvise(vma, &new_flags, behavior);
+		if (error)
+			goto out_convert_errno;
+		break;
+	case MADV_SECRET:
+	case MADV_NONSECRET:
+		error = secret_madvise(vma, start, end, behavior, &new_flags);
 		if (error)
 			goto out_convert_errno;
 		break;
@@ -968,6 +1042,8 @@ madvise_behavior_valid(int behavior)
 	case MADV_SOFT_OFFLINE:
 	case MADV_HWPOISON:
 #endif
+	case MADV_SECRET:
+	case MADV_NONSECRET:
 		return true;
 
 	default:
