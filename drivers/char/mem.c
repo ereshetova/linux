@@ -878,6 +878,8 @@ static const struct file_operations full_fops = {
 	.write		= write_full,
 };
 
+extern const struct file_operations securemem_fops;
+
 static const struct memdev {
 	const char *name;
 	umode_t mode;
@@ -900,6 +902,9 @@ static const struct memdev {
 	 [9] = { "urandom", 0666, &urandom_fops, 0 },
 #ifdef CONFIG_PRINTK
 	[11] = { "kmsg", 0644, &kmsg_fops, 0 },
+#endif
+#ifdef CONFIG_DEVSECUREMEM
+        [12] = { "securemem", 0644, &securemem_fops, 0 },
 #endif
 };
 

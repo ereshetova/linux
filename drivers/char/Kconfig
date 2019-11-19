@@ -26,6 +26,15 @@ config DEVKMEM
 	  kind of kernel debugging operations.
 	  When in doubt, say "N".
 
+config DEVSECUREMEM
+       bool "/dev/securemem virtual device support"
+       default n
+       help
+         Say Y here if you want to support the /dev/securemem device. The
+         /dev/securemem device allows applications to create memory mappings
+         with increased protection level.
+         When in doubt, say "N".
+
 source "drivers/tty/serial/Kconfig"
 source "drivers/tty/serdev/Kconfig"
 
