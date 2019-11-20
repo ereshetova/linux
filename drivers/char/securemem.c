@@ -3,6 +3,7 @@
 #include <linux/fs.h>
 #include <linux/printk.h>
 #include <linux/set_memory.h>
+#include <linux/pagewalk.h>
 
 #include <asm/tlb.h>
 
@@ -60,14 +61,17 @@ static const struct vm_operations_struct exclusivemem_vm_ops = {
 
 static vm_fault_t uncached_fault(struct vm_fault *vmf)
 {
-       struct page *page;
+  struct page *page;
 
-       page = alloc_page(GFP_HIGHUSER_MOVABLE);
-       if (!page)
-               return vmf_error(-ENOMEM);
+  page = alloc_page(GFP_HIGHUSER_MOVABLE);
+  if (!page)
+    return vmf_error(-ENOMEM);
 
-       vmf->page = page;
-       return 0;
+  SetPageSecret(page);
+
+  vmf->page = page;
+
+  return 0;
 }
 
 static const struct vm_operations_struct uncached_vm_ops = {
@@ -86,6 +90,9 @@ static int securemem_mmap(struct file *file, struct vm_area_struct *vma)
        case SECUREMEM_UNCACHED:
                vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
                vma->vm_ops = &uncached_vm_ops;
+               vma->vm_flags |= VM_UNCACHED;
+               /* setup the PG_secret flag upon pages */
+               mark_pages_secret(vma);
                break;
        default:
                return -EINVAL;

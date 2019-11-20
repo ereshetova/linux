@@ -2333,6 +2333,9 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
 	if (mem_cgroup_try_charge_delay(new_page, mm, GFP_KERNEL, &memcg, false))
 		goto oom_free_new;
 
+	if (vma->vm_flags & VM_UNCACHED)
+		SetPageSecret(new_page);
+
 	__SetPageUptodate(new_page);
 
 	mmu_notifier_range_init(&range, MMU_NOTIFY_CLEAR, 0, vma, mm,
