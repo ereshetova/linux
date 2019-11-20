@@ -63,13 +63,25 @@ static vm_fault_t uncached_fault(struct vm_fault *vmf)
 {
   struct page *page;
 
-  page = alloc_page(GFP_HIGHUSER_MOVABLE);
-  if (!page)
+    printk("%s()::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
+    page = alloc_page(GFP_HIGHUSER_MOVABLE);
+    if (!page)
     return vmf_error(-ENOMEM);
 
-  SetPageSecret(page);
+    if (PageSecret(page))
+      printk("%s()::flag set before::%lu\n", __func__, page->flags);
+    else
+      printk("%s()::flag not set before::%lu\n", __func__, page->flags);
 
-  vmf->page = page;
+    SetPageSecret(page);
+   
+    if (PageSecret(page))
+      printk("%s()::flag set::%lu\n", __func__, page->flags);
+    else
+      printk("%s()::flag nt set::%lu\n", __func__, page->flags);
+
+    vmf->page = page;
 
   return 0;
 }
@@ -88,11 +100,15 @@ static int securemem_mmap(struct file *file, struct vm_area_struct *vma)
                vma->vm_ops = &exclusivemem_vm_ops;
                break;
        case SECUREMEM_UNCACHED:
+               printk("%s():: vm_flags before:%lu\n", __func__, vma->vm_flags);
+               printk("vma:");
+               dump_vma(vma);
                vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
                vma->vm_ops = &uncached_vm_ops;
                vma->vm_flags |= VM_UNCACHED;
                /* setup the PG_secret flag upon pages */
                mark_pages_secret(vma);
+               printk("%s():: vm_flags after:%lu\n", __func__, vma->vm_flags);
                break;
        default:
                return -EINVAL;
