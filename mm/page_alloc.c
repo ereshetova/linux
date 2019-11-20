@@ -1125,6 +1125,33 @@ static void kernel_init_free_pages(struct page *page, int numpages)
 		clear_highpage(page + i);
 }
 
+static void clear_pages(struct page *page, int n)
+{
+	int i;
+
+	/* do not clean the page that has been
+	 * already poisoned */
+	if (page_poisoning_enabled()){
+		ClearPageSecret(page);
+		return;
+	}
+
+	/* do not clean the normal page */
+	if (!PageSecret(page))
+		return;
+
+	for (i = 0; i < n; i++) {
+		void *addr = kmap_atomic(page + i);
+		kasan_disable_current();
+		memset(addr, 0x41, PAGE_SIZE);
+		kasan_enable_current();
+		kunmap_atomic(addr);
+	}
+
+	ClearPageSecret(page);
+
+}
+
 static __always_inline bool free_pages_prepare(struct page *page,
 					unsigned int order, bool check_free)
 {
@@ -1179,6 +1206,9 @@ static __always_inline bool free_pages_prepare(struct page *page,
 		kernel_init_free_pages(page, 1 << order);
 
 	kernel_poison_pages(page, 1 << order, 0);
+
+	clear_pages(page, 1 << order);
+
 	/*
 	 * arch_free_page() can make the page's contents inaccessible.  s390
 	 * does this.  So nothing which can access the page's contents should
@@ -2085,7 +2115,7 @@ static void check_new_page_bad(struct page *page)
 static inline int check_new_page(struct page *page)
 {
 	if (likely(page_expected_state(page,
-				PAGE_FLAGS_CHECK_AT_PREP|__PG_HWPOISON)))
+				PAGE_FLAGS_CHECK_AT_PREP|__PG_HWPOISON |__PG_SECRET)))
 		return 0;
 
 	check_new_page_bad(page);
