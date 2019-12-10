@@ -562,6 +562,9 @@ static __latent_entropy int dup_mmap(struct mm_struct *mm,
 			struct inode *inode = file_inode(file);
 			struct address_space *mapping = file->f_mapping;
 
+			if (mpnt->vm_flags & VM_UNCACHED)
+				printk("%s()::flags::%lu\n", __func__, mpnt->vm_flags);
+
 			get_file(file);
 			if (tmp->vm_flags & VM_DENYWRITE)
 				atomic_dec(&inode->i_writecount);

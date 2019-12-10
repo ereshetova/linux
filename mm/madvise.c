@@ -104,6 +104,7 @@ static long madvise_behavior(struct vm_area_struct *vma,
 		break;
 	case MADV_DONTDUMP:
 		new_flags |= VM_DONTDUMP;
+		new_flags |= VM_UNCACHED;
 		break;
 	case MADV_DODUMP:
 		if (!is_vm_hugetlb_page(vma) && new_flags & VM_SPECIAL) {
@@ -167,6 +168,9 @@ success:
 	 * vm_flags is protected by the mmap_sem held in write mode.
 	 */
 	vma->vm_flags = new_flags;
+	if (vma->vm_flags & VM_UNCACHED)
+		dump_vma(vma);
+
 
 out_convert_errno:
 	/*

@@ -3081,6 +3081,9 @@ static vm_fault_t __do_fault(struct vm_fault *vmf)
 	struct vm_area_struct *vma = vmf->vma;
 	vm_fault_t ret;
 
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s()::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	/*
 	 * Preallocate pte before we take page_lock because this might lead to
 	 * deadlocks for memcg reclaim which waits for pages under writeback:
@@ -3102,6 +3105,10 @@ static vm_fault_t __do_fault(struct vm_fault *vmf)
 			return VM_FAULT_OOM;
 		smp_wmb(); /* See comment in __pte_alloc() */
 	}
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s():: 2 flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 
 	ret = vma->vm_ops->fault(vmf);
 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY |
@@ -3489,6 +3496,9 @@ static vm_fault_t do_read_fault(struct vm_fault *vmf)
 	struct vm_area_struct *vma = vmf->vma;
 	vm_fault_t ret = 0;
 
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s()::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	/*
 	 * Let's call ->map_pages() first and use ->fault() as fallback
 	 * if page by the offset is not ready to be mapped (cold cache or
@@ -3515,6 +3525,9 @@ static vm_fault_t do_cow_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
 	vm_fault_t ret;
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s()::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	if (unlikely(anon_vma_prepare(vma)))
 		return VM_FAULT_OOM;
@@ -3554,6 +3567,9 @@ static vm_fault_t do_shared_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
 	vm_fault_t ret, tmp;
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s()::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	ret = __do_fault(vmf);
 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
@@ -3598,6 +3614,9 @@ static vm_fault_t do_fault(struct vm_fault *vmf)
 	struct vm_area_struct *vma = vmf->vma;
 	struct mm_struct *vm_mm = vma->vm_mm;
 	vm_fault_t ret;
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s()::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	/*
 	 * The VMA was not fully populated on mmap() or missing VM_DONTEXPAND

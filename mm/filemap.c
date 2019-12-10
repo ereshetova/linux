@@ -2507,22 +2507,38 @@ vm_fault_t filemap_fault(struct vm_fault *vmf)
 	struct page *page;
 	vm_fault_t ret = 0;
 
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s() 1::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	max_off = DIV_ROUND_UP(i_size_read(inode), PAGE_SIZE);
-	if (unlikely(offset >= max_off))
-		return VM_FAULT_SIGBUS;
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s() 1::max_off::%lu offset::%lu i_size_read(inode)::%lld PAGE_SIZE:%d\n", __func__, max_off, offset, i_size_read(inode), PAGE_SIZE);
+	/*if (unlikely(offset >= max_off))
+		return VM_FAULT_SIGBUS;*/
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s() 2::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	/*
 	 * Do we have something in the page cache already?
 	 */
 	page = find_get_page(mapping, offset);
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	    printk("%s() 3::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	if (likely(page) && !(vmf->flags & FAULT_FLAG_TRIED)) {
 		/*
 		 * We found the page, so try async readahead before
 		 * waiting for the lock.
 		 */
+		if (vmf->vma->vm_flags & VM_UNCACHED)
+	    	printk("%s() 4::flags::%lu\n", __func__, vmf->vma->vm_flags);
 		fpin = do_async_mmap_readahead(vmf, page);
 	} else if (!page) {
 		/* No page in the page cache at all */
+		if (vmf->vma->vm_flags & VM_UNCACHED)
+	    	printk("%s() 5::flags::%lu\n", __func__, vmf->vma->vm_flags);
 		count_vm_event(PGMAJFAULT);
 		count_memcg_event_mm(vmf->vma->vm_mm, PGMAJFAULT);
 		ret = VM_FAULT_MAJOR;
@@ -2532,14 +2548,27 @@ retry_find:
 					  FGP_CREAT|FGP_FOR_MMAP,
 					  vmf->gfp_mask);
 		if (!page) {
+			if (vmf->vma->vm_flags & VM_UNCACHED)
+	    		printk("%s() 6::flags::%lu\n", __func__, vmf->vma->vm_flags);
 			if (fpin)
 				goto out_retry;
 			return vmf_error(-ENOMEM);
 		}
 	}
 
+	if (page && (vmf->vma->vm_flags & VM_UNCACHED)) {
+		void *addr = kmap_atomic(page);
+		printk("%s():: page:%s\n", __func__, (unsigned char*)addr);
+	}
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 7::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	if (!lock_page_maybe_drop_mmap(vmf, page, &fpin))
 		goto out_retry;
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 12::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	/* Did it get truncated? */
 	if (unlikely(compound_head(page)->mapping != mapping)) {
@@ -2547,7 +2576,13 @@ retry_find:
 		put_page(page);
 		goto retry_find;
 	}
+		if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 13::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	VM_BUG_ON_PAGE(page_to_pgoff(page) != offset, page);
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 10::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	/*
 	 * We have a locked page in the page cache, now we need to check
@@ -2555,6 +2590,9 @@ retry_find:
 	 */
 	if (unlikely(!PageUptodate(page)))
 		goto page_not_uptodate;
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 11::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	/*
 	 * We've made it this far and we had to drop our mmap_sem, now is the
@@ -2565,6 +2603,8 @@ retry_find:
 		unlock_page(page);
 		goto out_retry;
 	}
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 8::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	/*
 	 * Found the page and have a reference on it.
@@ -2576,6 +2616,8 @@ retry_find:
 		put_page(page);
 		return VM_FAULT_SIGBUS;
 	}
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 9::flags::%lu\n", __func__, vmf->vma->vm_flags);
 
 	vmf->page = page;
 	return ret | VM_FAULT_LOCKED;
@@ -2587,16 +2629,33 @@ page_not_uptodate:
 	 * because there really aren't any performance issues here
 	 * and we need to check for errors.
 	 */
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 55::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	ClearPageError(page);
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 56::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	fpin = maybe_unlock_mmap_for_io(vmf, fpin);
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 57::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	error = mapping->a_ops->readpage(file, page);
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 58::flags::%lu\n", __func__, vmf->vma->vm_flags);
 	if (!error) {
 		wait_on_page_locked(page);
+		if (vmf->vma->vm_flags & VM_UNCACHED)
+	   		printk("%s() 59::flags::%lu\n", __func__, vmf->vma->vm_flags);
 		if (!PageUptodate(page))
 			error = -EIO;
 	}
 	if (fpin)
 		goto out_retry;
+
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 66::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	put_page(page);
 
 	if (!error || error == AOP_TRUNCATED_PAGE)
@@ -2612,6 +2671,9 @@ out_retry:
 	 * re-find the vma and come back and find our hopefully still populated
 	 * page.
 	 */
+	if (vmf->vma->vm_flags & VM_UNCACHED)
+	   	printk("%s() 77::flags::%lu\n", __func__, vmf->vma->vm_flags);
+
 	if (page)
 		put_page(page);
 	if (fpin)
