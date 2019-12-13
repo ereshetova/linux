@@ -245,7 +245,8 @@ long memfd_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 #define MFD_NAME_PREFIX_LEN (sizeof(MFD_NAME_PREFIX) - 1)
 #define MFD_NAME_MAX_LEN (NAME_MAX - MFD_NAME_PREFIX_LEN)
 
-#define MFD_ALL_FLAGS (MFD_CLOEXEC | MFD_ALLOW_SEALING | MFD_HUGETLB)
+#define MFD_SECRET_MASK (MFD_CLOEXEC | MFD_SECRET)
+#define MFD_ALL_FLAGS (MFD_CLOEXEC | MFD_ALLOW_SEALING | MFD_HUGETLB | MFD_SECRET)
 
 SYSCALL_DEFINE2(memfd_create,
 		const char __user *, uname,
@@ -256,6 +257,11 @@ SYSCALL_DEFINE2(memfd_create,
 	int fd, error;
 	char *name;
 	long len;
+	
+	printk("%s()::flags:%u, MFD_SECRET_MASK: %u\n", __func__, flags, MFD_SECRET_MASK);
+
+	if (flags & ~(unsigned int)MFD_SECRET_MASK)
+		return -EINVAL;
 
 	if (!(flags & MFD_HUGETLB)) {
 		if (flags & ~(unsigned int)MFD_ALL_FLAGS)
@@ -296,7 +302,9 @@ SYSCALL_DEFINE2(memfd_create,
 		goto err_name;
 	}
 
-	if (flags & MFD_HUGETLB) {
+	if (flags & MFD_SECRET) {
+		file = secretmem_file_create(uname, flags);
+	} else if (flags & MFD_HUGETLB) {
 		struct user_struct *user = NULL;
 
 		file = hugetlb_file_setup(name, 0, VM_NORESERVE, &user,

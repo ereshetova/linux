@@ -41,6 +41,8 @@ long vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int error = -ENOTTY;
 
+	//printk("%s()::cmd: %u\n", __func__, cmd);
+
 	if (!filp->f_op->unlocked_ioctl)
 		goto out;
 
@@ -48,6 +50,8 @@ long vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	if (error == -ENOIOCTLCMD)
 		error = -ENOTTY;
  out:
+ 	//printk("%s()::out: %u\n", __func__, cmd);
+
 	return error;
 }
 EXPORT_SYMBOL(vfs_ioctl);
@@ -728,10 +732,14 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
 		return ioctl_file_dedupe_range(filp, argp);
 
 	default:
-		if (S_ISREG(inode->i_mode))
+		if (S_ISREG(inode->i_mode)){
+			//printk("%s():: default 1 cmd: %u\n", __func__, cmd);
 			error = file_ioctl(filp, cmd, arg);
-		else
+		}
+		else {
+			//printk("%s():: default 2 cmd: %u\n", __func__, cmd);
 			error = vfs_ioctl(filp, cmd, arg);
+		}
 		break;
 	}
 	return error;

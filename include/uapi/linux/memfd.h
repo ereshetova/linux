@@ -9,6 +9,14 @@
 #define MFD_ALLOW_SEALING	0x0002U
 #define MFD_HUGETLB		0x0004U
 
+#define MFD_SECRET      0x0008U
+
+/* ioctls for secret memory */
+#define MFD_SECRET_IOCTL '-'
+#define MFD_SECRET_EXCLUSIVE   _IOW(MFD_SECRET_IOCTL, 0x13, unsigned long)
+#define MFD_SECRET_UNCACHED    _IOW(MFD_SECRET_IOCTL, 0x14, unsigned long)
+
+
 /*
  * Huge page size encoding when MFD_HUGETLB is specified, and a huge page
  * size other than the default is desired.  See hugetlb_encode.h.

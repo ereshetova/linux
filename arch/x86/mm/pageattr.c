@@ -2009,6 +2009,8 @@ static int _set_pages_array(struct page **pages, int numpages,
 	int free_idx;
 	int ret;
 
+	printk("%s()::%d\n", __func__, __LINE__);
+
 	for (i = 0; i < numpages; i++) {
 		if (PageHighMem(pages[i]))
 			continue;
@@ -2017,6 +2019,7 @@ static int _set_pages_array(struct page **pages, int numpages,
 		if (reserve_memtype(start, end, new_type, NULL))
 			goto err_out;
 	}
+			printk("%s()::%d\n", __func__, __LINE__);
 
 	/* If WC, set to UC- first and then WC */
 	set_type = (new_type == _PAGE_CACHE_MODE_WC) ?
@@ -2024,6 +2027,8 @@ static int _set_pages_array(struct page **pages, int numpages,
 
 	ret = cpa_set_pages_array(pages, numpages,
 				  cachemode2pgprot(set_type));
+	printk("%s ret: d\n", __func__, ret);
+
 	if (!ret && new_type == _PAGE_CACHE_MODE_WC)
 		ret = change_page_attr_set_clr(NULL, numpages,
 					       cachemode2pgprot(
@@ -2032,8 +2037,10 @@ static int _set_pages_array(struct page **pages, int numpages,
 					       0, CPA_PAGES_ARRAY, pages);
 	if (ret)
 		goto err_out;
+	printk("%s()::%d\n", __func__, __LINE__);
 	return 0; /* Success */
 err_out:
+	printk("%s()::%d\n", __func__, __LINE__);
 	free_idx = i;
 	for (i = 0; i < free_idx; i++) {
 		if (PageHighMem(pages[i]))

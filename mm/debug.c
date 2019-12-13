@@ -113,7 +113,7 @@ void dump_page(struct page *page, const char *reason)
 }
 EXPORT_SYMBOL(dump_page);
 
-#ifdef CONFIG_DEBUG_VM
+//#ifdef CONFIG_DEBUG_VM
 
 void dump_vma(const struct vm_area_struct *vma)
 {
@@ -130,6 +130,8 @@ void dump_vma(const struct vm_area_struct *vma)
 		vma->vm_flags, &vma->vm_flags);
 }
 EXPORT_SYMBOL(dump_vma);
+
+#ifdef CONFIG_DEBUG_VM
 
 void dump_mm(const struct mm_struct *mm)
 {

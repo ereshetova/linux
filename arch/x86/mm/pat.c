@@ -481,6 +481,7 @@ static int reserve_ram_pages_type(u64 start, u64 end,
 
 		page = pfn_to_page(pfn);
 		type = get_page_memtype(page);
+		printk("%s()::req_type %lu type %lu\n", __func__, req_type, type );
 		if (type != _PAGE_CACHE_MODE_WB) {
 			pr_info("x86/PAT: reserve_ram_pages_type failed [mem %#010Lx-%#010Lx], track 0x%x, req 0x%x\n",
 				start, end - 1, type, req_type);
@@ -550,18 +551,24 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
 	int is_range_ram;
 	int err = 0;
 
+	printk("%s()::begin \n", __func__);
+
 	start = sanitize_phys(start);
 	end = sanitize_phys(end);
 	if (start >= end) {
 		WARN(1, "%s failed: [mem %#010Lx-%#010Lx], req %s\n", __func__,
 				start, end - 1, cattr_name(req_type));
+			printk("%s()::%d\n", __func__, __LINE__);
 		return -EINVAL;
 	}
+	printk("%s()::%d\n", __func__, __LINE__);
 
 	if (!pat_enabled()) {
 		/* This is identical to page table setting without PAT */
 		if (new_type)
 			*new_type = req_type;
+			printk("%s()::%d\n", __func__, __LINE__);
+
 		return 0;
 	}
 
@@ -569,8 +576,12 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
 	if (x86_platform.is_untracked_pat_range(start, end)) {
 		if (new_type)
 			*new_type = _PAGE_CACHE_MODE_WB;
+			printk("%s()::%d\n", __func__, __LINE__);
+
 		return 0;
 	}
+
+	printk("%s()::%d\n", __func__, __LINE__);
 
 	/*
 	 * Call mtrr_lookup to get the type hint. This is an
@@ -584,12 +595,16 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
 		*new_type = actual_type;
 
 	is_range_ram = pat_pagerange_is_ram(start, end);
+		printk("%s()::%d\n", __func__, __LINE__);
+
 	if (is_range_ram == 1) {
 
 		err = reserve_ram_pages_type(start, end, req_type, new_type);
+		printk("%s()::%d\n", __func__, __LINE__);
 
 		return err;
 	} else if (is_range_ram < 0) {
+		printk("%s()::%d\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
