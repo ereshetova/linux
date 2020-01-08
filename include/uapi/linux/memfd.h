@@ -32,4 +32,12 @@
 #define MFD_HUGE_2GB	HUGETLB_FLAG_ENCODE_2GB
 #define MFD_HUGE_16GB	HUGETLB_FLAG_ENCODE_16GB
 
+#define MFD_SECRET             0x0008U
+
+/* ioctls for secret memory */
+#define MFD_SECRET_IOCTL '-'
+#define MFD_SECRET_EXCLUSIVE   _IOW(MFD_SECRET_IOCTL, 0x13, unsigned long)
+#define MFD_SECRET_UNCACHED    _IOW(MFD_SECRET_IOCTL, 0x14, unsigned long)
+
+
 #endif /* _UAPI_LINUX_MEMFD_H */
